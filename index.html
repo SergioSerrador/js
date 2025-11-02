@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Presupuesto</title>
+</head>
+<body>
+  <h1>Gestión de Presupuesto</h1>
+
+  <div>
+    <label>Presupuesto: <input type="number" id="inputPresupuesto" min="0" step="0.01"></label>
+    <button id="btnActualizarPresupuesto">Actualizar Presupuesto</button>
+  </div>
+
+  <div id="totalGastos">Total gastos: 0 €</div>
+  <div id="balance">Balance: 0 €</div>
+
+  <h2>Crear gasto</h2>
+  <div id="formularioGasto"></div>
+
+  <h2>Listado de gastos</h2>
+  <div id="listadoGastos"></div>
+
+  <script type="module" src="js/gestionPresupuestoWebV1.js"></script>
+</body>
+</html>

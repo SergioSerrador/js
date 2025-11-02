@@ -1,259 +1,144 @@
-// TODO: Variables globales
-let presupuesto = 0;
-let gastos = [];
-let idGasto = 0;
+import {
+  CrearGasto,
+  anyadirGasto,
+  borrarGasto,
+  listarGastos,
+  actualizarPresupuesto,
+  calcularTotalGastos,
+  calcularBalance
+} from './gestionPresupuesto.js'; // importar las funciones de la lógica del negocio
 
-function actualizarPresupuesto(valor) {
-  if (typeof valor === "number" && valor >= 0) {
-    presupuesto = valor;
-    return presupuesto;
-  } else {
-    console.log("Error: el valor debe ser un numero no negativo.");
-    return -1;
-  }
+// esperar a que el documento html esté completamente cargado
+document.addEventListener('DOMContentLoaded', () => {
+  inicializarInterfaz();
+});
+
+// función que arranca la aplicación de la interfaz
+function inicializarInterfaz() {
+  crearFormularioPresupuesto(); // configurar el formulario para el presupuesto
+  crearFormularioGasto();       // crear y configurar el formulario para añadir gastos
+  actualizarListado();          // mostrar los gastos y los totales iniciales
 }
 
-function mostrarPresupuesto() {
-    return "Tu presupuesto actual es de " + presupuesto + " €";
-}
+// función para configurar el formulario de actualización del presupuesto
+function crearFormularioPresupuesto() {
+  // obtener el input y el botón del html
+  const inputPresupuesto = document.getElementById('inputPresupuesto');
+  const btn = document.getElementById('btnActualizarPresupuesto');
 
-function CrearGasto(descripcion, valor, fechaStr, ...etiquetas) {
-    if (typeof valor !== "number" || valor < 0) {
-        valor = 0;
-    }
+  // escuchar el click en el botón
+  btn.addEventListener('click', () => {
+    const valor = parseFloat(inputPresupuesto.value); // convertir el texto del input a número
 
-    this.descripcion = descripcion;
-    this.valor = valor;
-
-    let timestamp;
-    if (typeof fechaStr === "string") {
-        const parsed = Date.parse(fechaStr);
-        timestamp = !isNaN(parsed) ? parsed : Date.now();
+    // comprobar que el valor sea un número válido y no negativo
+    if (!isNaN(valor) && valor >= 0) {
+      actualizarPresupuesto(valor); // llamar a la función de la lógica
+      actualizarListado();          // refrescar la vista para actualizar el balance
+      alert(`presupuesto actualizado a ${valor.toFixed(2)} €`);
     } else {
-        timestamp = Date.now();
+      alert("introduce un valor válido para el presupuesto");
     }
-    this.fecha = timestamp;
+  });
+}
 
-    this.etiquetas = [];
+// función para crear el formulario de añadir gasto
+function crearFormularioGasto() {
+  const contenedor = document.getElementById('formularioGasto');
+  contenedor.innerHTML = ''; // limpiar el contenedor por si acaso
+  const form = document.createElement('form'); // crear la etiqueta form
 
-    this.anyadirEtiquetas = function(...tags) {
-        tags.forEach(tag => {
-            if (typeof tag === "string" && tag.length) {
-                const clean = tag.replace(/^[\s-]+/, '').trim();
-                if (clean.length && !this.etiquetas.includes(clean)) {
-                    this.etiquetas.push(clean);
-                }
-            }
-        });
-    };
+  // crear los campos de input
+  const inputDescripcion = document.createElement('input');
+  inputDescripcion.type = 'text';
+  inputDescripcion.placeholder = 'descripción';
+  inputDescripcion.required = true;
 
-    this.borrarEtiquetas = function(...tags) {
-        if (!tags || tags.length === 0) return;
-        const cleans = tags
-            .filter(t => typeof t === 'string')
-            .map(t => t.replace(/^[\s-]+/, '').trim())
-            .filter(Boolean);
-        if (cleans.length === 0) return;
-        this.etiquetas = this.etiquetas.filter(e => !cleans.includes(e));
-    };
+  const inputValor = document.createElement('input');
+  inputValor.type = 'number';
+  inputValor.placeholder = 'valor (€)';
+  inputValor.required = true;
+  inputValor.step = '0.01'; // permitir dos decimales
 
-    this.actualizarFecha = function(nuevaFechaStr) {
-        if (typeof nuevaFechaStr !== "string") return;
-        const parsed = Date.parse(nuevaFechaStr);
-        if (!isNaN(parsed)) {
-            this.fecha = parsed;
+  const inputFecha = document.createElement('input');
+  inputFecha.type = 'date';
+  inputFecha.required = true;
+
+  const inputEtiquetas = document.createElement('input');
+  inputEtiquetas.type = 'text';
+  inputEtiquetas.placeholder = 'etiquetas (coma separadas)';
+
+  const boton = document.createElement('button'); // crear el botón de enviar
+  boton.type = 'submit';
+  boton.textContent = 'añadir gasto';
+
+  // añadir todos los elementos al formulario
+  form.append(inputDescripcion, inputValor, inputFecha, inputEtiquetas, boton);
+  // añadir el formulario al contenedor en el html
+  contenedor.appendChild(form);
+
+  // escuchar el evento de envío del formulario
+  form.addEventListener('submit', (e) => {
+    e.preventDefault(); // evitar que la página se recargue
+
+    // obtener los valores de los inputs
+    const descripcion = inputDescripcion.value.trim();
+    const valor = parseFloat(inputValor.value);
+    const fecha = inputFecha.value;
+    // procesar las etiquetas: separarlas por coma, limpiar espacios y quitar vacías
+    const etiquetas = inputEtiquetas.value
+      ? inputEtiquetas.value.split(',').map(t => t.trim()).filter(t => t)
+      : [];
+
+    // comprobación mínima de datos
+    if (!descripcion || isNaN(valor) || !fecha) {
+      alert("completa todos los campos correctamente");
+      return;
+    }
+
+    // crear el objeto gasto. '...' (spread) para pasar las etiquetas como argumentos
+    const gasto = new CrearGasto(descripcion, valor, fecha, ...etiquetas);
+    
+    anyadirGasto(gasto);     // guardar el gasto usando la lógica de negocio
+    form.reset();            // limpiar el formulario
+    actualizarListado();     // refrescar la lista de gastos
+  });
+}
+
+// función para dibujar la lista de gastos y actualizar los totales
+function actualizarListado() {
+  const contenedor = document.getElementById('listadoGastos');
+  contenedor.innerHTML = ''; // limpiar el contenido anterior
+  const gastos = listarGastos(); // obtener la lista actual
+
+  if (gastos.length === 0) {
+    contenedor.textContent = 'no hay gastos registrados.';
+  } else {
+    // recorrer cada gasto en la lista
+    gastos.forEach(g => {
+      const div = document.createElement('div'); // crear un contenedor para cada gasto
+      
+      const info = document.createElement('span'); // crear un elemento para la información
+      // formatear la información del gasto (descripción, valor, fecha y etiquetas)
+      info.textContent = `${g.descripcion} - ${g.valor.toFixed(2)} € - ${new Date(g.fecha).toLocaleDateString()} - ${g.etiquetas.join(', ')}`;
+      
+      const btnBorrar = document.createElement('button');
+      btnBorrar.textContent = 'borrar';
+      
+      // configurar el botón de borrado
+      btnBorrar.addEventListener('click', () => {
+        // pedir confirmación antes de eliminar
+        if (confirm(`¿seguro que quieres borrar el gasto "${g.descripcion}"?`)) {
+          borrarGasto(g.id);       // llamar a la función de borrado por id
+          actualizarListado();     // refrescar la lista
         }
-    };
-
-    if (etiquetas && etiquetas.length) {
-        this.anyadirEtiquetas(...etiquetas);
-    }
-
-    this.mostrarGasto = function() {
-      return "Gasto correspondiente a " + this.descripcion +
-             " con valor " + this.valor + " €" +
-             " (fecha: " + new Date(this.fecha).toLocaleString() + ")" +
-             " etiquetas: [" + this.etiquetas.join(", ") + "]";
-    };
-
-    this.mostrarGastoCompleto = function () {
-    let texto = `Gasto correspondiente a ${this.descripcion} con valor ${this.valor} €.\n`;
-    texto += `Fecha: ${new Date(this.fecha).toLocaleString()}\n`;
-    texto += `Etiquetas:\n`;
-
-    this.etiquetas.forEach(tag => {
-        const clean = (typeof tag === 'string')
-            ? tag.replace(/^[\s-]+/, '').trim()
-            : String(tag);
-        texto += `- ${clean}\n`;
+      });
+      
+      div.append(info, btnBorrar); // añadir la info y el botón al div del gasto
+      contenedor.appendChild(div); // añadir el gasto al contenedor principal
     });
-
-    return texto;
-};
-
-this.obtenerPeriodoAgrupacion = function(periodo) {
-    const d = new Date(this.fecha);
-    const yyyy = d.getUTCFullYear();
-    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(d.getUTCDate()).padStart(2, '0');
-
-    if (periodo === "dia") return `${yyyy}-${mm}-${dd}`;
-    if (periodo === "mes") return `${yyyy}-${mm}`;
-    if (periodo === "anyo") return `${yyyy}`;
-    return "";
-};
-    this.actualizarDescripcion = function(nuevaDescripcion){
-      this.descripcion = nuevaDescripcion;
-    };
-
-    this.actualizarValor = function(nuevoValor){
-      if (typeof nuevoValor === "number" && nuevoValor >= 0){
-        this.valor = nuevoValor;
-      } else {
-        console.log("Error: el valor debe ser un numero negativo.")
-      }
-    };
-
+  }
+  
+  // actualizar el contenido de los totales en el html
+  document.getElementById('totalGastos').textContent = `total gastos: ${calcularTotalGastos().toFixed(2)} €`;
+  document.getElementById('balance').textContent = `balance: ${calcularBalance().toFixed(2)} €`;
 }
-
-function listarGastos() {
-    return gastos;
-}
-
-function filtrarGastos(opts = {}) {
-    const {
-        fechaDesde,
-        fechaHasta,
-        valorMinimo,
-        valorMaximo,
-        descripcionContiene,
-        etiquetasTiene
-    } = opts || {};
-
-    const desdeTs = (typeof fechaDesde === "string") ? Date.parse(fechaDesde) : NaN;
-    const hastaTs = (typeof fechaHasta === "string") ? Date.parse(fechaHasta) : NaN;
-
-    return gastos.filter(g => {
-        if (!g) return false;
-
-        if (!isNaN(desdeTs) && typeof g.fecha === "number") {
-            if (g.fecha < desdeTs) return false;
-        }
-
-        if (!isNaN(hastaTs) && typeof g.fecha === "number") {
-            if (g.fecha > hastaTs) return false;
-        }
-
-        if (typeof valorMinimo === "number") {
-            if (typeof g.valor !== "number" || g.valor < valorMinimo) return false;
-        }
-
-        if (typeof valorMaximo === "number") {
-            if (typeof g.valor !== "number" || g.valor > valorMaximo) return false;
-        }
-
-        if (typeof descripcionContiene === "string" && descripcionContiene.length) {
-            const desc = (g.descripcion || "").toString().toLowerCase();
-            if (desc.indexOf(descripcionContiene.toLowerCase()) === -1) return false;
-        }
-
-        if (Array.isArray(etiquetasTiene) && etiquetasTiene.length) {
-            const buscadas = etiquetasTiene
-                .filter(t => typeof t === "string")
-                .map(t => t.toLowerCase());
-            const etiquetasGasto = Array.isArray(g.etiquetas) ? g.etiquetas.map(t => (t || "").toString().toLowerCase()) : [];
-            const anyMatch = buscadas.some(b => etiquetasGasto.includes(b));
-            if (!anyMatch) return false;
-        }
-
-        return true;
-    });
-}
-
-function agruparGastos(periodo = "mes", etiquetas = [], fechaDesde, fechaHasta) {
-    if (typeof periodo !== "string" || !["dia", "mes", "anyo"].includes(periodo)) {
-        periodo = "mes";
-    }
-
-    const desdeTs = (typeof fechaDesde === "string" && !isNaN(Date.parse(fechaDesde))) ? Date.parse(fechaDesde) : null;
-    const hastaTs = (typeof fechaHasta === "string" && !isNaN(Date.parse(fechaHasta))) ? Date.parse(fechaHasta) : Date.now();
-
-    const buscadas = Array.isArray(etiquetas) && etiquetas.length
-        ? etiquetas.filter(t => typeof t === "string").map(t => t.toLowerCase())
-        : null;
-
-    const seleccion = gastos.filter(g => {
-        if (!g) return false;
-
-        if (typeof g.fecha === "number") {
-            if (desdeTs !== null && g.fecha < desdeTs) return false;
-            if (typeof hastaTs === "number" && g.fecha > hastaTs) return false;
-        }
-
-        if (Array.isArray(buscadas) && buscadas.length) {
-            const etiquetasGasto = Array.isArray(g.etiquetas)
-                ? g.etiquetas.map(t => (t || "").toString().toLowerCase())
-                : [];
-            const anyMatch = buscadas.some(b => etiquetasGasto.includes(b));
-            if (!anyMatch) return false;
-        }
-
-        return true;
-    });
-
-    const resultado = {};
-    seleccion.forEach(g => {
-        const key = (typeof g.obtenerPeriodoAgrupacion === "function") ? g.obtenerPeriodoAgrupacion(periodo) : "";
-        if (!key) return;
-        if (!Object.prototype.hasOwnProperty.call(resultado, key)) resultado[key] = 0;
-        const v = (typeof g.valor === "number") ? g.valor : 0;
-        resultado[key] += v;
-    });
-
-    return resultado;
-}
-
-function anyadirGasto(gasto) {
-    if (typeof gasto !== "object" || gasto === null) {
-        return null;
-    }
-    gasto.id = idGasto;
-    idGasto++;
-    gastos.push(gasto);
-    return gasto;
-}
-
-function borrarGasto(id) {
-    const idx = gastos.findIndex(g => g && g.id === id);
-    if (idx !== -1) {
-        gastos.splice(idx, 1);
-    }
-}
-
-function calcularTotalGastos() {
-    return gastos.reduce((sum, g) => {
-        const v = (g && typeof g.valor === "number") ? g.valor : 0;
-        return sum + v;
-    }, 0);
-}
-
-function calcularBalance() {
-    return presupuesto - calcularTotalGastos();
-}
-// Exportación de funciones
-export {
-    mostrarPresupuesto,
-    actualizarPresupuesto,
-    CrearGasto,
-    listarGastos,
-    anyadirGasto,
-    borrarGasto,
-    calcularTotalGastos,
-    calcularBalance,
-    filtrarGastos,
-    agruparGastos
-}
-
-const ejemplo1 = new CrearGasto("Comida", 25.5, "2025-10-01", "alimentacion", "restaurante");
-const ejemplo2 = new CrearGasto("Transporte", 2.75);
-const ejemplo3 = new CrearGasto("Ropa", 50, "fecha-no-valida", "ropa", "tienda");
