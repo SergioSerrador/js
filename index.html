@@ -1,27 +1,83 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>gestión de presupuesto v1</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gestión de presupuesto v2</title>
+  <style>
+    /* le pongo algo de estilo para que se vea mejor */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f3f3f3;
+    }
+
+    mi-gasto {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .gasto {
+      background-color: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      margin-bottom: 8px;
+    }
+
+    .botones {
+      margin-top: 8px;
+    }
+
+    .form-editar {
+      background-color: #eee;
+      padding: 8px;
+      margin-top: 8px;
+      border-radius: 5px;
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <h1>gestión de presupuesto</h1>
+  <h1>gestión de presupuesto</h1>
 
-    <div>
-    <label>presupuesto: <input type="number" id="inputPresupuesto" min="0" step="0.01"></label>
-    <button id="btnActualizarPresupuesto">actualizar presupuesto</button>
-  </div>
+  <div>
+    <label>presupuesto: <input type="number" id="inputPresupuesto" min="0" step="0.01"></label>
+    <button id="btnActualizarPresupuesto">actualizar presupuesto</button>
+  </div>
 
-  <div id="totalGastos">total gastos: 0 €</div>
-  <div id="balance">balance: 0 €</div>
+  <div id="totalGastos">total gastos: 0 €</div>
+  <div id="balance">balance: 0 €</div>
 
-  <h2>crear gasto</h2>
-    <div id="formularioGasto"></div>
+  <h2>crear gasto</h2>
+  <div id="formularioGasto"></div>
 
-  <h2>listado de gastos</h2>
-    <div id="listadoGastos"></div>
+  <h2>listado de gastos</h2>
+  <div id="listadoGastos"></div>
 
-    <script type="module" src="js/gestionPresupuestoWebV1.js"></script>
+  <!-- esta es la plantilla del componente mi-gasto -->
+  <template id="plantillaGasto">
+    <div class="gasto">
+      <div class="descripcion"></div>
+      <div class="valor"></div>
+      <div class="fecha"></div>
+      <div class="etiquetas"></div>
+      <div class="botones">
+        <button class="btnEditar">editar</button>
+        <button class="btnBorrar">borrar</button>
+      </div>
+
+      <form class="form-editar">
+        <input type="text" class="editarDescripcion" placeholder="descripción">
+        <input type="number" class="editarValor" step="0.01">
+        <input type="date" class="editarFecha">
+        <input type="text" class="editarEtiquetas" placeholder="etiquetas (coma separadas)">
+        <button type="submit">guardar</button>
+        <button type="button" class="btnCancelar">cancelar</button>
+      </form>
+    </div>
+  </template>
+
+  <script type="module" src="js/gestionPresupuestoWebV2.js"></script>
 </body>
 </html>
