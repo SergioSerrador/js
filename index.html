@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>gestión de presupuesto v2</title>
   <style>
-    /* le pongo algo de estilo para que se vea mejor */
+    /* algo de estilo */
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
@@ -41,6 +41,7 @@
 <body>
   <h1>gestión de presupuesto</h1>
 
+  <!-- presupuesto -->
   <div>
     <label>presupuesto: <input type="number" id="inputPresupuesto" min="0" step="0.01"></label>
     <button id="btnActualizarPresupuesto">actualizar presupuesto</button>
@@ -53,9 +54,14 @@
   <div id="formularioGasto"></div>
 
   <h2>listado de gastos</h2>
+
+  <!-- botones nuevos -->
+  <button id="btnGuardarLocal">guardar en navegador</button>
+  <button id="btnCargarLocal">cargar del navegador</button>
+
   <div id="listadoGastos"></div>
 
-  <!-- esta es la plantilla del componente mi-gasto -->
+  <!-- plantilla del componente -->
   <template id="plantillaGasto">
     <div class="gasto">
       <div class="descripcion"></div>
@@ -78,6 +84,7 @@
     </div>
   </template>
 
+  <!-- script -->
   <script type="module" src="js/gestionPresupuestoWebV2.js"></script>
 </body>
 </html>
